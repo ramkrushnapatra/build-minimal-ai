@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
-from app.config import settings
+from app.core.config import settings
 
 settings.data_dir.mkdir(parents=True, exist_ok=True)
 db_path = settings.data_dir / "app.db"
@@ -11,7 +11,7 @@ Base = declarative_base()
 
 
 async def init_db():
-    from app.models import Item
+    from app.database.models import Item
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

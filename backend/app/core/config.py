@@ -3,7 +3,7 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings
 
-_DEFAULT_DATA = Path(__file__).resolve().parent.parent.parent / "data"
+_DEFAULT_DATA = Path(__file__).resolve().parent.parent.parent.parent / "data"
 
 
 class Settings(BaseSettings):

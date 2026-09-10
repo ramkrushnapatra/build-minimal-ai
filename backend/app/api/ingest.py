@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from app.database import get_session
-from app.models import Item, ItemStatus, SourceType
+from app.database.models import Item, ItemStatus, SourceType
 from app.services.indexer import index_item
 from app.services.url_fetcher import fetch_url_content
 

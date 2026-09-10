@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from app.api.ingest import format_item
 from app.database import get_session
-from app.models import Item
+from app.database.models import Item
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["items"])

@@ -4,9 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import ingest, items, query
-from app.config import settings
+from app.core.config import settings
+from app.core.logging import setup_logging
 from app.database import init_db
-from app.logging_config import setup_logging
 
 
 @asynccontextmanager

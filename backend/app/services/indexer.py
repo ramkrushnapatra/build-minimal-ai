@@ -1,7 +1,7 @@
 import logging
 
 from app.database import async_session
-from app.models import Item, ItemStatus
+from app.database.models import Item, ItemStatus
 from app.services.chunker import chunk_text
 from app.services.embeddings import embed_texts
 from app.services.vectorstore import upsert_chunks

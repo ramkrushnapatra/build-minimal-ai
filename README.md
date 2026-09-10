@@ -155,10 +155,10 @@ Server-side fetch with httpx + BeautifulSoup. Works for static pages. SPAs and J
 build-minimal-ai/
 ├── backend/
 │   └── app/
-│       ├── api/           ingest.py, items.py, query.py
-│       ├── services/      chunker, embeddings, vectorstore, indexer, url_fetcher, query
-│       ├── models.py      Item model (note | url)
-│       ├── database.py    SQLite setup
+│       ├── api/              ingest.py, items.py, query.py
+│       ├── core/             config.py, logging.py
+│       ├── database/         connection.py, models.py
+│       ├── services/         chunker, embeddings, vectorstore, indexer, url_fetcher, query
 │       └── main.py
 ├── frontend/
 │   └── src/

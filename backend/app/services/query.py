@@ -1,6 +1,6 @@
 import logging
 
-from app.config import settings
+from app.core.config import settings
 from app.services.embeddings import embed_texts, get_openai_client
 
 logger = logging.getLogger(__name__)

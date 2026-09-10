@@ -1,10 +1,9 @@
 import enum
 import uuid
-from datetime import datetime
 
 from sqlalchemy import Column, DateTime, Enum, String, Text, func
 
-from app.database import Base
+from app.database.connection import Base
 
 
 class SourceType(str, enum.Enum):

@@ -1,6 +1,6 @@
 from openai import AsyncOpenAI
 
-from app.config import settings
+from app.core.config import settings
 
 _client = None
 
