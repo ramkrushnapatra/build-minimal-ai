@@ -1,6 +1,9 @@
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings
+
+_DEFAULT_DATA = Path(__file__).resolve().parent.parent.parent / "data"
 
 
 class Settings(BaseSettings):
@@ -11,10 +14,9 @@ class Settings(BaseSettings):
     chunk_overlap: int = 150
     top_k: int = 4
 
-    data_dir: Path = Path(__file__).resolve().parent.parent.parent / "data"
+    data_dir: Path = Path(os.getenv("DATA_DIR", str(_DEFAULT_DATA)))
     upload_dir: Path = data_dir / "uploads"
     chroma_dir: Path = data_dir / "chroma"
-    database_url: str = "sqlite+aiosqlite:///./data/app.db"
 
     cors_origins: list[str] = ["http://localhost:3000"]
 
