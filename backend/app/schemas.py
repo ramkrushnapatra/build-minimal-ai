@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Literal
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel
 
@@ -9,7 +9,7 @@ class DocumentOut(BaseModel):
     filename: str
     content_type: str
     status: Literal["pending", "processing", "ready", "failed"]
-    error_message: str | None
+    error_message: Optional[str]
     created_at: datetime
 
     class Config:
@@ -20,9 +20,9 @@ class JobOut(BaseModel):
     id: str
     document_id: str
     status: Literal["queued", "running", "completed", "failed"]
-    error_message: str | None
+    error_message: Optional[str]
     created_at: datetime
-    completed_at: datetime | None
+    completed_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -30,7 +30,7 @@ class JobOut(BaseModel):
 
 class ChatRequest(BaseModel):
     message: str
-    document_ids: list[str] | None = None
+    document_ids: Optional[List[str]] = None
 
 
 class Citation(BaseModel):
