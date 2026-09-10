@@ -58,27 +58,21 @@ Users can save short notes or URLs, then ask questions over their saved content 
 
 ---
 
-## Local Setup
+## Local Setup (Windows)
 
 ### 1. Backend
 
-```bash
+```powershell
 cd backend
 python -m venv .venv
-
-# Windows
 .venv\Scripts\activate
-
-# macOS / Linux
-source .venv/bin/activate
-
 pip install -r requirements.txt
 ```
 
-Create `backend/.env` from the example:
+Create `backend\.env` from the example:
 
-```bash
-cp .env.example .env
+```powershell
+copy .env.example .env
 ```
 
 Edit `.env` and add your key:
@@ -89,13 +83,15 @@ OPENAI_API_KEY=sk-your-key-here
 
 Start the server:
 
-```bash
+```powershell
 uvicorn app.main:app --reload --port 8000
 ```
 
 ### 2. Frontend
 
-```bash
+Open a new terminal:
+
+```powershell
 cd frontend
 npm install
 npm run dev
@@ -105,10 +101,13 @@ Open **http://localhost:3000**
 
 ### 3. Docker (optional)
 
-```bash
-cp backend/.env.example backend/.env
-# add OPENAI_API_KEY in backend/.env
+```powershell
+copy backend\.env.example backend\.env
+```
 
+Add `OPENAI_API_KEY` in `backend\.env`, then run:
+
+```powershell
 docker compose up --build
 ```
 
