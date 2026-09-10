@@ -29,7 +29,7 @@ def format_item(item):
 
 
 @router.post("/ingest", status_code=201)
-async def ingest(request, background_tasks, session=Depends(get_session)):
+async def ingest(request: Request, background_tasks: BackgroundTasks, session=Depends(get_session)):
     data = await request.json()
     item_type = data.get("type", "")
     item_id = str(uuid.uuid4())

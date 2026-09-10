@@ -9,7 +9,7 @@ router = APIRouter(tags=["query"])
 
 
 @router.post("/query")
-async def query(request):
+async def query(request: Request):
     data = await request.json()
     question = data.get("question", "").strip()
     if not question:
