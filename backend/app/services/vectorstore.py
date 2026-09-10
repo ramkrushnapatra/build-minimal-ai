@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
 from app.config import settings
 
-COLLECTION_NAME = "documents"
+logger = logging.getLogger(__name__)
+
+COLLECTION_NAME = "knowledge_inbox"
 
 _client: chromadb.PersistentClient | None = None
 
@@ -30,30 +34,26 @@ def get_collection():
 
 
 async def upsert_chunks(
-    document_id: str,
-    filename: str,
+    item_id: str,
+    title: str,
     chunks: list[str],
     embeddings: list[list[float]],
 ):
     collection = get_collection()
-    ids = [f"{document_id}_{i}" for i in range(len(chunks))]
+    ids = [f"{item_id}_{i}" for i in range(len(chunks))]
     metadatas = [
-        {"document_id": document_id, "filename": filename, "chunk_index": i}
+        {"item_id": item_id, "title": title, "chunk_index": i}
         for i in range(len(chunks))
     ]
     collection.upsert(ids=ids, documents=chunks, embeddings=embeddings, metadatas=metadatas)
+    logger.info("Indexed %d chunks for item %s", len(chunks), item_id)
 
 
-async def search(query_embedding: list[float], top_k: int, document_ids: list[str] | None = None):
+async def search(query_embedding: list[float], top_k: int):
     collection = get_collection()
-    where = None
-    if document_ids:
-        where = {"document_id": {"$in": document_ids}}
-
     results = collection.query(
         query_embeddings=[query_embedding],
         n_results=top_k,
-        where=where,
         include=["documents", "metadatas", "distances"],
     )
 
@@ -67,16 +67,16 @@ async def search(query_embedding: list[float], top_k: int, document_ids: list[st
         results["distances"][0],
     ):
         hits.append({
-            "document_id": meta["document_id"],
-            "filename": meta["filename"],
+            "item_id": meta["item_id"],
+            "title": meta["title"],
             "chunk_text": doc,
-            "score": 1 - dist,
+            "score": round(1 - dist, 4),
         })
     return hits
 
 
-def delete_document_vectors(document_id: str):
+def delete_item_vectors(item_id: str):
     collection = get_collection()
-    existing = collection.get(where={"document_id": document_id})
+    existing = collection.get(where={"item_id": item_id})
     if existing["ids"]:
         collection.delete(ids=existing["ids"])
