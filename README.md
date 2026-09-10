@@ -1,69 +1,47 @@
-# build-minimal-ai
+# AI Knowledge Inbox
 
-A minimal document Q&A application powered by Retrieval-Augmented Generation (RAG). Upload PDFs or text files, then ask questions and get answers grounded in your documents with source citations.
+A minimal production-style web app for the **Turium AI Interview Assignment**.
 
-**Live repo:** https://github.com/ramkrushnapatra/build-minimal-ai
+Save short notes or URLs, then ask questions over your saved content — powered by a simple RAG pipeline.
 
-## Architecture
+## What it does
 
-```
-┌─────────────┐     REST + SSE      ┌──────────────┐
-│  Next.js    │ ◄─────────────────► │   FastAPI    │
-│  Frontend   │                     │   Backend    │
-└─────────────┘                     └──────┬───────┘
-                                             │
-                              ┌──────────────┼──────────────┐
-                              ▼              ▼              ▼
-                         SQLite DB     ChromaDB       OpenAI API
-                        (metadata)    (vectors)    (embed + chat)
-```
+1. **Save content** — plain-text notes or URLs (fetched server-side)
+2. **Index async** — chunk → embed → store in ChromaDB
+3. **Ask questions** — semantic search + LLM answer with cited sources
 
 ## Stack
 
-| Layer | Technology | Why |
-|-------|-----------|-----|
-| Frontend | Next.js 15, TypeScript, Tailwind | Modern React with App Router, type safety |
-| Backend | FastAPI, Python 3.12 | Async-native, great for streaming SSE |
-| Vector DB | ChromaDB | Zero-config local persistence, no extra infra |
-| Embeddings | OpenAI text-embedding-3-small | High quality, simple API |
-| LLM | OpenAI gpt-4o-mini | Cost-effective, fast streaming |
-| Job queue | FastAPI BackgroundTasks | Lightweight async ingestion without Redis |
+| Layer | Tech |
+|-------|------|
+| Frontend | **React** (Vite), hooks, Tailwind |
+| Backend | FastAPI, Python |
+| Vector store | ChromaDB |
+| DB | SQLite (item metadata) |
+| LLM | OpenAI API |
 
-## Features
+## API (as per assignment)
 
-- **Document upload** — PDF, TXT, Markdown via drag-and-drop
-- **Async ingestion** — Background chunking, embedding, and vector indexing with job status polling
-- **RAG chat** — Semantic search over uploaded docs with SSE-streamed answers
-- **Citations** — Source references with relevance scores shown below each answer
-- **Document filtering** — Select specific documents to scope your queries
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/ingest` | Save a note `{type:"note", content:"..."}` or URL `{type:"url", url:"..."}` |
+| GET | `/items` | List all saved items |
+| POST | `/query` | Ask `{question:"..."}` → `{answer, sources[]}` |
 
-## Local Setup
+## Local setup
 
-### Prerequisites
-
-- Python 3.12+
-- Node.js 20+
-- OpenAI API key
-
-### 1. Backend
+### Backend
 
 ```bash
 cd backend
 python -m venv .venv
-
-# Windows
-.venv\Scripts\activate
-# macOS/Linux
-source .venv/bin/activate
-
+.venv\Scripts\activate        # Windows
 pip install -r requirements.txt
-cp .env.example .env
-# Edit .env and set your OPENAI_API_KEY
-
+cp .env.example .env          # set OPENAI_API_KEY
 uvicorn app.main:app --reload --port 8000
 ```
 
-### 2. Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -73,69 +51,26 @@ npm run dev
 
 Open http://localhost:3000
 
-### Docker (optional)
+## Design tradeoffs
 
-```bash
-cp backend/.env.example backend/.env
-# Set OPENAI_API_KEY in backend/.env
+**Chunking:** 800-char windows with 150-char overlap. Simple and fast; may split mid-sentence. At scale, use semantic/recursive splitting.
 
-docker compose up --build
-```
+**Vector store:** ChromaDB — zero-config local persistence. Fine for single-user MVP; migrate to pgvector/Pinecone for multi-tenant production.
 
-## API Endpoints
+**Async indexing:** FastAPI `BackgroundTasks` indexes content after ingest. Sufficient for this scope; use Celery/Redis at higher throughput.
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/documents/upload` | Upload a document |
-| POST | `/api/documents/{id}/ingest` | Start async ingestion |
-| GET | `/api/documents` | List all documents |
-| GET | `/api/jobs/{id}` | Poll ingestion job status |
-| POST | `/api/chat` | Stream chat response (SSE) |
-| GET | `/health` | Health check |
+**URL fetching:** Server-side httpx + BeautifulSoup. No JS rendering — SPAs may return thin content. Production would add a headless browser or readability API.
 
-## Design Decisions & Tradeoffs
+**No auth:** Single-user by design per assignment spec.
 
-### Why separate frontend and backend?
-
-Python dominates the AI/ML ecosystem (ChromaDB, OpenAI SDK, PDF parsing). FastAPI's async model pairs naturally with SSE streaming. A decoupled architecture lets each layer deploy independently.
-
-### Why ChromaDB over pgvector/Pinecone?
-
-ChromaDB runs locally with zero setup — ideal for a minimal MVP and local evaluation. Tradeoff: not suited for multi-tenant production at scale. For production, I'd migrate to pgvector (reuse Postgres) or a managed service like Pinecone.
-
-### Why FastAPI BackgroundTasks instead of Celery/Redis?
-
-The assignment calls for async workflows, but adding Redis + workers adds operational complexity disproportionate to the scope. BackgroundTasks handles ingestion jobs cleanly for a single-instance deployment. At scale, I'd introduce a proper task queue (Celery, ARQ, or Taskiq).
-
-### Chunking strategy
-
-Fixed-size character chunks (800 chars, 150 overlap). Simple and predictable. Tradeoff: may split mid-sentence. A production system would use semantic or recursive splitting (e.g., LangChain's RecursiveCharacterTextSplitter with sentence boundaries).
-
-### SSE over WebSockets
-
-SSE is simpler for unidirectional LLM token streaming, works over HTTP/2, and needs no connection management on the client. WebSockets would be better for bidirectional real-time features (typing indicators, multi-user).
-
-### No authentication
-
-Keeps the MVP focused on core RAG flow. Production would add JWT auth, per-user document isolation, and rate limiting.
-
-## Project Structure
+## Project structure
 
 ```
-build-minimal-ai/
-├── backend/
-│   ├── app/
-│   │   ├── api/          # Route handlers
-│   │   ├── services/     # RAG pipeline, embeddings, chat
-│   │   ├── models.py     # SQLAlchemy models
-│   │   ├── schemas.py    # Pydantic schemas
-│   │   └── main.py
-│   └── requirements.txt
-├── frontend/
-│   └── src/
-│       ├── app/          # Next.js pages
-│       ├── components/   # Upload, chat, document list
-│       └── lib/          # API client
-├── data/                 # Runtime data (gitignored)
-└── docker-compose.yml
+backend/app/
+  api/          ingest.py, items.py, query.py
+  services/     chunker, embeddings, vectorstore, indexer, url_fetcher, query
+  models.py     Item (note | url)
+frontend/src/
+  components/   InboxForm, ItemList, QueryPanel
+  App.tsx       main layout with hooks
 ```
