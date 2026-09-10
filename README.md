@@ -117,30 +117,79 @@ Frontend: http://localhost:3000 | Backend: http://localhost:8000
 
 ## Design Decisions & Tradeoffs
 
-### Chunking
-800-character windows with 150-character overlap. Simple and intentional for an MVP. May split mid-sentence. At scale, switch to recursive or semantic chunking.
+### 1. Chunking approach
 
-### Vector store — ChromaDB
-Zero-config local persistence, no extra infrastructure. Good for single-user local use. At scale with many users, migrate to pgvector or a managed service like Pinecone.
+**What I chose:** Fixed-size character chunking — 800 characters per chunk, 150 characters overlap between chunks.
 
-### Async indexing
-FastAPI `BackgroundTasks` handles chunking + embedding after ingest. Enough for this assignment. At scale, use Celery/Redis for a proper job queue.
+**How it works:** The text is cut into equal-sized blocks by character count. Each new chunk starts 150 characters before the previous chunk ended, so context is not lost at boundaries.
 
-### URL fetching
-Server-side fetch with httpx + BeautifulSoup. Works for static pages. SPAs and JS-heavy sites may return thin content. Production would use a headless browser or readability API.
+**Example of "may split mid-sentence":**
+```
+Original text:
+"FastAPI is a modern Python framework. It supports async requests and is easy to use."
 
-### What breaks at scale
-- Single-process background tasks block under heavy load
-- ChromaDB on local disk is not multi-tenant
-- No rate limiting or auth
-- SQLite is fine for one user, not for concurrent multi-user writes
+Chunk 1 (chars 0–800):   "...Python framework. It supports async requ"
+Chunk 2 (chars 650–1450): "...async requests and is easy to use."
+```
+The first chunk can end halfway through a word or sentence because the cut is by character count, not by paragraph or sentence.
 
-### Production changes
-- Add authentication and per-user data isolation
-- Move to a task queue (Celery, ARQ) for ingestion
-- Use managed vector DB + Postgres
-- Add rate limiting, monitoring, and structured log aggregation
-- Cache frequent queries
+**Why this approach:**
+- Simple to implement and easy to reason about
+- Predictable chunk sizes for embedding API calls
+- Overlap (150 chars) reduces the chance that an answer spans a hard cut and gets missed in search
+- Good enough for short notes and small articles in an MVP
+
+**Tradeoff:** Search quality can drop when meaning is split across chunks. A question about one sentence may only partially match two chunks.
+
+**At scale:** Switch to recursive chunking (split by paragraph → sentence → word) or semantic chunking (split when embedding similarity drops).
+
+---
+
+### 2. Vector store choice
+
+**What I chose:** ChromaDB (local persistent storage in `data/chroma/`)
+
+**Why:**
+- No separate server to install or manage
+- Works out of the box on Windows for local development
+- Stores vectors on disk, so data survives restarts
+- Fits the assignment requirement for a lightweight vector store
+
+**Tradeoff:** Not built for many users or millions of documents on one machine.
+
+**At scale:** Move to pgvector (if you already use Postgres) or a managed service like Pinecone/Qdrant.
+
+---
+
+### 3. What breaks at scale
+
+| Area | Current limit |
+|------|---------------|
+| Background indexing | `BackgroundTasks` runs in the same process — heavy uploads can slow API responses |
+| ChromaDB | Single local instance, not designed for multi-tenant isolation |
+| SQLite | Fine for one user; concurrent writes from many users will cause lock issues |
+| OpenAI API | No rate limiting or retry backoff — bursts can fail or get expensive |
+| URL fetching | No caching — fetching the same URL twice re-downloads everything |
+
+---
+
+### 4. Production changes
+
+- **Auth:** Add user accounts so each person only sees their own notes/URLs
+- **Job queue:** Replace `BackgroundTasks` with Celery/Redis for reliable async ingestion
+- **Database:** Postgres for metadata, pgvector or Pinecone for vectors
+- **Chunking:** Recursive or semantic splitting for better retrieval quality
+- **Observability:** Metrics, alerting, and centralized logs (e.g. Datadog, Sentry)
+- **Rate limiting:** Protect `/query` and `/ingest` from abuse and control OpenAI costs
+- **URL cache:** Store fetched page content with TTL to avoid re-fetching
+
+---
+
+### Other decisions
+
+**Async indexing:** FastAPI `BackgroundTasks` runs chunking + embedding after ingest returns. Keeps the API simple for this assignment.
+
+**URL fetching:** httpx + BeautifulSoup strips HTML to plain text. Works for static pages; JavaScript-rendered sites may return little or no content.
 
 ### Debuggability
 - Structured logging on all API routes and services
