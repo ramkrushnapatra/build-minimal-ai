@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import os
 from pathlib import Path
 
@@ -15,11 +13,9 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 150
     top_k: int = 4
-
     data_dir: Path = Path(os.getenv("DATA_DIR", str(_DEFAULT_DATA)))
     chroma_dir: Path = data_dir / "chroma"
-
-    cors_origins: list[str] = ["http://localhost:3000"]
+    cors_origins: list = ["http://localhost:3000"]
 
     class Config:
         env_file = ".env"

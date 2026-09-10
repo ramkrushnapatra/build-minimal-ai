@@ -1,16 +1,10 @@
-import type { Item } from "../types";
-
-interface Props {
-  items: Item[];
-}
-
-const STATUS_STYLE: Record<string, string> = {
+const statusStyle = {
   processing: "text-yellow-400",
   indexed: "text-green-400",
   failed: "text-red-400",
 };
 
-export default function ItemList({ items }: Props) {
+export default function ItemList({ items }) {
   if (items.length === 0) {
     return <p className="text-gray-500 text-sm">No saved items yet.</p>;
   }
@@ -26,7 +20,7 @@ export default function ItemList({ items }: Props) {
                 {item.source_type} · {new Date(item.created_at).toLocaleString()}
               </p>
             </div>
-            <span className={`text-xs shrink-0 ${STATUS_STYLE[item.status]}`}>{item.status}</span>
+            <span className={`text-xs shrink-0 ${statusStyle[item.status]}`}>{item.status}</span>
           </div>
           {item.url && (
             <a href={item.url} target="_blank" rel="noreferrer" className="text-xs text-blue-400 truncate block mt-1">

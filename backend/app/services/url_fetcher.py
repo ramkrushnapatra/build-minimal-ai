@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import re
 
@@ -12,8 +10,7 @@ MAX_CONTENT_LENGTH = 50000
 TIMEOUT_SECONDS = 15
 
 
-async def fetch_url_content(url: str) -> tuple[str, str]:
-    """Fetch a URL and return (title, plain text content)."""
+async def fetch_url_content(url):
     logger.info("Fetching URL: %s", url)
     async with httpx.AsyncClient(follow_redirects=True, timeout=TIMEOUT_SECONDS) as client:
         response = await client.get(url, headers={"User-Agent": "build-minimal-ai/0.1"})
@@ -24,7 +21,11 @@ async def fetch_url_content(url: str) -> tuple[str, str]:
     for tag in soup(["script", "style", "nav", "footer", "header"]):
         tag.decompose()
 
-    title = soup.title.string.strip() if soup.title and soup.title.string else url
+    if soup.title and soup.title.string:
+        title = soup.title.string.strip()
+    else:
+        title = url
+
     text = soup.get_text(separator="\n")
     text = re.sub(r"\n{3,}", "\n\n", text).strip()
 

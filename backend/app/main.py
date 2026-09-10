@@ -10,7 +10,7 @@ from app.logging_config import setup_logging
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app):
     setup_logging()
     settings.chroma_dir.mkdir(parents=True, exist_ok=True)
     await init_db()

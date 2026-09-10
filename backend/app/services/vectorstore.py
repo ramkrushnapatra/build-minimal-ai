@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 import chromadb
@@ -10,11 +8,10 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "knowledge_inbox"
+_client = None
 
-_client: chromadb.PersistentClient | None = None
 
-
-def get_chroma_client() -> chromadb.PersistentClient:
+def get_chroma_client():
     global _client
     if _client is None:
         settings.chroma_dir.mkdir(parents=True, exist_ok=True)
@@ -33,12 +30,7 @@ def get_collection():
     )
 
 
-async def upsert_chunks(
-    item_id: str,
-    title: str,
-    chunks: list[str],
-    embeddings: list[list[float]],
-):
+async def upsert_chunks(item_id, title, chunks, embeddings):
     collection = get_collection()
     ids = [f"{item_id}_{i}" for i in range(len(chunks))]
     metadatas = [
@@ -49,7 +41,7 @@ async def upsert_chunks(
     logger.info("Indexed %d chunks for item %s", len(chunks), item_id)
 
 
-async def search(query_embedding: list[float], top_k: int):
+async def search(query_embedding, top_k):
     collection = get_collection()
     results = collection.query(
         query_embeddings=[query_embedding],
@@ -73,10 +65,3 @@ async def search(query_embedding: list[float], top_k: int):
             "score": round(1 - dist, 4),
         })
     return hits
-
-
-def delete_item_vectors(item_id: str):
-    collection = get_collection()
-    existing = collection.get(where={"item_id": item_id})
-    if existing["ids"]:
-        collection.delete(ids=existing["ids"])

@@ -1,21 +1,17 @@
 import { useState } from "react";
 import { ingestNote, ingestUrl } from "../api";
 
-interface Props {
-  onSaved: () => void;
-}
-
-export default function InboxForm({ onSaved }: Props) {
-  const [mode, setMode] = useState<"note" | "url">("note");
+export default function InboxForm({ onSaved }) {
+  const [mode, setMode] = useState("note");
   const [noteText, setNoteText] = useState("");
   const [urlText, setUrlText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setError("");
     try {
       if (mode === "note") {
         await ingestNote(noteText.trim());
@@ -26,7 +22,7 @@ export default function InboxForm({ onSaved }: Props) {
       }
       onSaved();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
+      setError(err.message || "Save failed");
     } finally {
       setLoading(false);
     }

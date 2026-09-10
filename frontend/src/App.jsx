@@ -1,34 +1,33 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchItems } from "./api";
 import InboxForm from "./components/InboxForm";
 import ItemList from "./components/ItemList";
 import QueryPanel from "./components/QueryPanel";
-import type { Item } from "./types";
 
 export default function App() {
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState([]);
 
-  const refresh = useCallback(async () => {
+  async function refresh() {
     try {
       const data = await fetchItems();
       setItems(data);
-    } catch {
-      // backend may not be running yet
+    } catch (e) {
+      setItems([]);
     }
-  }, []);
+  }
 
   useEffect(() => {
     refresh();
     const interval = setInterval(refresh, 3000);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, []);
 
   return (
     <div className="flex h-screen">
       <aside className="w-96 border-r border-gray-800 flex flex-col">
         <div className="p-4 border-b border-gray-800">
           <h1 className="text-lg font-bold">AI Knowledge Inbox</h1>
-          <p className="text-xs text-gray-500 mt-1">Save notes & URLs, ask questions</p>
+          <p className="text-xs text-gray-500 mt-1">Save notes and URLs, ask questions</p>
         </div>
         <div className="p-4 border-b border-gray-800">
           <InboxForm onSaved={refresh} />

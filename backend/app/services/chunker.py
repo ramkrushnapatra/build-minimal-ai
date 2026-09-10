@@ -1,15 +1,12 @@
-from __future__ import annotations
-
 from app.config import settings
 
 
-def chunk_text(text: str) -> list[str]:
-    """Split text into overlapping chunks by character count."""
+def chunk_text(text):
     text = text.strip()
     if not text:
         return []
 
-    chunks: list[str] = []
+    chunks = []
     start = 0
     size = settings.chunk_size
     overlap = settings.chunk_overlap

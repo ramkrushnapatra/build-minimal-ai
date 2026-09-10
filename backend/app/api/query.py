@@ -1,18 +1,22 @@
 import logging
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
-from app.schemas import QueryRequest, QueryResponse
 from app.services.query import run_query
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["query"])
 
 
-@router.post("/query", response_model=QueryResponse)
-async def query(body: QueryRequest):
+@router.post("/query")
+async def query(request):
+    data = await request.json()
+    question = data.get("question", "").strip()
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+
     try:
-        return await run_query(body.question)
+        return await run_query(question)
     except Exception as exc:
         logger.exception("Query failed")
         raise HTTPException(status_code=500, detail=f"Query failed: {exc}")

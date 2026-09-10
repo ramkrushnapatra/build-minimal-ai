@@ -1,12 +1,10 @@
-import type { Item, QueryResult } from "./types";
-
-export async function fetchItems(): Promise<Item[]> {
+export async function fetchItems() {
   const res = await fetch("/items");
   if (!res.ok) throw new Error("Failed to load items");
   return res.json();
 }
 
-export async function ingestNote(content: string): Promise<Item> {
+export async function ingestNote(content) {
   const res = await fetch("/ingest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -19,7 +17,7 @@ export async function ingestNote(content: string): Promise<Item> {
   return res.json();
 }
 
-export async function ingestUrl(url: string): Promise<Item> {
+export async function ingestUrl(url) {
   const res = await fetch("/ingest", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -32,7 +30,7 @@ export async function ingestUrl(url: string): Promise<Item> {
   return res.json();
 }
 
-export async function askQuestion(question: string): Promise<QueryResult> {
+export async function askQuestion(question) {
   const res = await fetch("/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

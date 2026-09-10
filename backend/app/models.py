@@ -1,12 +1,8 @@
-from __future__ import annotations
-
 import enum
 import uuid
 from datetime import datetime
-from typing import Optional
 
-from sqlalchemy import DateTime, Enum, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, DateTime, Enum, String, Text, func
 
 from app.database import Base
 
@@ -25,11 +21,11 @@ class ItemStatus(str, enum.Enum):
 class Item(Base):
     __tablename__ = "items"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    source_type: Mapped[SourceType] = mapped_column(Enum(SourceType))
-    title: Mapped[str] = mapped_column(String(500))
-    raw_content: Mapped[str] = mapped_column(Text)
-    url: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
-    status: Mapped[ItemStatus] = mapped_column(Enum(ItemStatus), default=ItemStatus.PROCESSING)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    source_type = Column(Enum(SourceType))
+    title = Column(String(500))
+    raw_content = Column(Text)
+    url = Column(String(2000), nullable=True)
+    status = Column(Enum(ItemStatus), default=ItemStatus.PROCESSING)
+    error_message = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())

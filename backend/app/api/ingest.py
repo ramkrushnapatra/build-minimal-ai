@@ -1,12 +1,10 @@
 import logging
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 
 from app.database import get_session
 from app.models import Item, ItemStatus, SourceType
-from app.schemas import IngestRequest, ItemOut, NoteIngest, UrlIngest
 from app.services.indexer import index_item
 from app.services.url_fetcher import fetch_url_content
 
@@ -14,30 +12,33 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["ingest"])
 
 
-def to_item_out(item: Item) -> ItemOut:
-    preview = item.raw_content[:200] + ("..." if len(item.raw_content) > 200 else "")
-    return ItemOut(
-        id=item.id,
-        source_type=item.source_type.value,
-        title=item.title,
-        url=item.url,
-        status=item.status.value,
-        error_message=item.error_message,
-        created_at=item.created_at,
-        preview=preview,
-    )
+def format_item(item):
+    preview = item.raw_content[:200]
+    if len(item.raw_content) > 200:
+        preview += "..."
+    return {
+        "id": item.id,
+        "source_type": item.source_type.value,
+        "title": item.title,
+        "url": item.url,
+        "status": item.status.value,
+        "error_message": item.error_message,
+        "created_at": item.created_at,
+        "preview": preview,
+    }
 
 
-@router.post("/ingest", response_model=ItemOut, status_code=201)
-async def ingest(
-    body: IngestRequest,
-    background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_session),
-):
+@router.post("/ingest", status_code=201)
+async def ingest(request, background_tasks, session=Depends(get_session)):
+    data = await request.json()
+    item_type = data.get("type", "")
     item_id = str(uuid.uuid4())
 
-    if isinstance(body, NoteIngest):
-        content = body.content.strip()
+    if item_type == "note":
+        content = data.get("content", "").strip()
+        if not content:
+            raise HTTPException(status_code=400, detail="Note content is required")
+
         title = content.split("\n")[0][:200] or "Untitled note"
         item = Item(
             id=item_id,
@@ -46,10 +47,13 @@ async def ingest(
             raw_content=content,
             status=ItemStatus.PROCESSING,
         )
-        logger.info("Ingesting note %s (%d chars)", item_id, len(content))
+        logger.info("Ingesting note %s", item_id)
 
-    elif isinstance(body, UrlIngest):
-        url = str(body.url)
+    elif item_type == "url":
+        url = data.get("url", "").strip()
+        if not url:
+            raise HTTPException(status_code=400, detail="URL is required")
+
         try:
             title, content = await fetch_url_content(url)
         except Exception as exc:
@@ -64,13 +68,13 @@ async def ingest(
             url=url,
             status=ItemStatus.PROCESSING,
         )
-        logger.info("Ingesting URL %s as item %s", url, item_id)
+        logger.info("Ingesting URL %s", url)
     else:
-        raise HTTPException(status_code=400, detail="Invalid ingest type")
+        raise HTTPException(status_code=400, detail="Type must be note or url")
 
     session.add(item)
     await session.commit()
     await session.refresh(item)
 
     background_tasks.add_task(index_item, item.id)
-    return to_item_out(item)
+    return format_item(item)

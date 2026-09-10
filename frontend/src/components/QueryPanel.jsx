@@ -1,25 +1,24 @@
 import { useState } from "react";
 import { askQuestion } from "../api";
-import type { QueryResult } from "../types";
 
 export default function QueryPanel() {
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<QueryResult | null>(null);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState(null);
 
-  async function handleAsk(e: React.FormEvent) {
+  async function handleAsk(e) {
     e.preventDefault();
     const q = question.trim();
     if (!q || loading) return;
 
     setLoading(true);
-    setError(null);
+    setError("");
     try {
       const data = await askQuestion(q);
       setResult(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Query failed");
+      setError(err.message || "Query failed");
     } finally {
       setLoading(false);
     }

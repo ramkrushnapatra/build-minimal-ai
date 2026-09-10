@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 
 from app.database import async_session
@@ -11,11 +9,11 @@ from app.services.vectorstore import upsert_chunks
 logger = logging.getLogger(__name__)
 
 
-async def index_item(item_id: str):
+async def index_item(item_id):
     async with async_session() as session:
         item = await session.get(Item, item_id)
         if not item:
-            logger.error("Item %s not found for indexing", item_id)
+            logger.error("Item %s not found", item_id)
             return
 
         try:
@@ -28,7 +26,7 @@ async def index_item(item_id: str):
 
             item.status = ItemStatus.INDEXED
             item.error_message = None
-            logger.info("Item %s indexed successfully", item_id)
+            logger.info("Item %s indexed", item_id)
         except Exception as exc:
             item.status = ItemStatus.FAILED
             item.error_message = str(exc)
