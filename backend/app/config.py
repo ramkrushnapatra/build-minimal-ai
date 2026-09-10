@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     top_k: int = 4
 
     data_dir: Path = Path(os.getenv("DATA_DIR", str(_DEFAULT_DATA)))
-    upload_dir: Path = data_dir / "uploads"
     chroma_dir: Path = data_dir / "chroma"
 
     cors_origins: list[str] = ["http://localhost:3000"]

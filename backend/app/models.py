@@ -3,50 +3,33 @@ from __future__ import annotations
 import enum
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import DateTime, Enum, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
 
-class DocumentStatus(str, enum.Enum):
-    PENDING = "pending"
+class SourceType(str, enum.Enum):
+    NOTE = "note"
+    URL = "url"
+
+
+class ItemStatus(str, enum.Enum):
     PROCESSING = "processing"
-    READY = "ready"
+    INDEXED = "indexed"
     FAILED = "failed"
 
 
-class JobStatus(str, enum.Enum):
-    QUEUED = "queued"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-
-
-class Document(Base):
-    __tablename__ = "documents"
+class Item(Base):
+    __tablename__ = "items"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    filename: Mapped[str] = mapped_column(String(255))
-    content_type: Mapped[str] = mapped_column(String(100))
-    file_path: Mapped[str] = mapped_column(String(500))
-    status: Mapped[DocumentStatus] = mapped_column(Enum(DocumentStatus), default=DocumentStatus.PENDING)
+    source_type: Mapped[SourceType] = mapped_column(Enum(SourceType))
+    title: Mapped[str] = mapped_column(String(500))
+    raw_content: Mapped[str] = mapped_column(Text)
+    url: Mapped[Optional[str]] = mapped_column(String(2000), nullable=True)
+    status: Mapped[ItemStatus] = mapped_column(Enum(ItemStatus), default=ItemStatus.PROCESSING)
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-
-    jobs: Mapped[List["Job"]] = relationship(back_populates="document", cascade="all, delete-orphan")
-
-
-class Job(Base):
-    __tablename__ = "jobs"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    document_id: Mapped[str] = mapped_column(String(36), ForeignKey("documents.id"))
-    status: Mapped[JobStatus] = mapped_column(Enum(JobStatus), default=JobStatus.QUEUED)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-
-    document: Mapped["Document"] = relationship(back_populates="jobs")
